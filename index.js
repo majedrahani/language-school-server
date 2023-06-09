@@ -29,6 +29,7 @@ async function run() {
 
         const instructorsCollection = client.db("language-school").collection("instructors");
         const classesCollection = client.db("language-school").collection("classes");
+        const cartCollection = client.db("language-school").collection("carts");
 
         // get instructors data
         app.get('/instructors', async (req, res) => {
@@ -41,6 +42,14 @@ async function run() {
             const result = await classesCollection.find().toArray();
             res.send(result);
         })
+
+        // cart data
+        app.post('/carts', async (req, res) => {
+            const item = req.body;
+            const result = await cartCollection.insertOne(item);
+            res.send(result);
+          })
+      
 
 
         // Send a ping to confirm a successful connection
