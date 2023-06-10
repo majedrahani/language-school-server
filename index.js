@@ -30,6 +30,25 @@ async function run() {
         const instructorsCollection = client.db("language-school").collection("instructors");
         const classesCollection = client.db("language-school").collection("classes");
         const cartCollection = client.db("language-school").collection("carts");
+        const studentsCollection = client.db("language-school").collection("students");
+
+        // students related apis
+        app.get('/students', async (req, res) => {
+            const result = await studentsCollection.find().toArray();
+            res.send(result);
+          });
+
+        app.post('/students', async(req, res) => {
+            const student = req.body;
+            const query = { email: student.email }
+            const existingUser = await studentsCollection.findOne(query);
+      
+            if (existingUser) {
+              return res.send({ message: 'student already exists' })
+            }
+            const result = await studentsCollection.insertOne(student);
+            res.send(result);
+        })
 
         // get instructors data
         app.get('/instructors', async (req, res) => {
