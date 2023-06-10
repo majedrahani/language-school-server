@@ -1,5 +1,6 @@
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken');
 const app = express()
 const port = process.env.PORT || 5000;
 
@@ -31,6 +32,13 @@ async function run() {
         const classesCollection = client.db("language-school").collection("classes");
         const cartCollection = client.db("language-school").collection("carts");
         const studentsCollection = client.db("language-school").collection("students");
+
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+      
+            res.send({ token })
+          })
 
         // students related apis
         app.get('/students', async (req, res) => {
@@ -82,7 +90,7 @@ async function run() {
           app.delete('/students/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await cartCollection.deleteOne(query);
+            const result = await studentsCollection.deleteOne(query);
             res.send(result);
         })
 
