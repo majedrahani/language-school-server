@@ -48,6 +48,28 @@ async function run() {
             }
             const result = await studentsCollection.insertOne(student);
             res.send(result);
+        });
+
+        app.patch('/students/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+              $set: {
+                role: 'admin'
+              },
+            };
+      
+            const result = await studentsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+      
+          });
+
+          app.delete('/students/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await cartCollection.deleteOne(query);
+            res.send(result);
         })
 
         // get instructors data
