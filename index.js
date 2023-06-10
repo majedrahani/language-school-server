@@ -63,7 +63,21 @@ async function run() {
             const result = await studentsCollection.updateOne(filter, updateDoc);
             res.send(result);
       
-          });
+        });
+        app.patch('/students/instructor/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+              $set: {
+                role: 'instructor'
+              },
+            };
+      
+            const result = await studentsCollection.updateOne(filter, updateDoc);
+            res.send(result);
+      
+        });
 
           app.delete('/students/:id', async (req, res) => {
             const id = req.params.id;
