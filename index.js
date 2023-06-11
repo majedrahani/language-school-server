@@ -28,9 +28,9 @@ const verifyJWT = (req, res, next) => {
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zael0vm.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zael0vm.mongodb.net/?retryWrites=true&w=majority`;
 
-// const uri = 'mongodb://0.0.0.0:27017/'
+const uri = 'mongodb://0.0.0.0:27017/'
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -58,8 +58,18 @@ async function run() {
             res.send({ token })
         })
 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await studentsCollection.findOne(query);
+            if (user?.role !== 'admin') {
+              return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+          }
+
         // students related apis
-        app.get('/students', async (req, res) => {
+        app.get('/students', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await studentsCollection.find().toArray();
             res.send(result);
         });
