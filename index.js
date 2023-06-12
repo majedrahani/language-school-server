@@ -29,9 +29,9 @@ const verifyJWT = (req, res, next) => {
 
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zael0vm.mongodb.net/?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.zael0vm.mongodb.net/?retryWrites=true&w=majority`;
 
-const uri = 'mongodb://0.0.0.0:27017/'
+// const uri = 'mongodb://0.0.0.0:27017/'
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -41,45 +41,38 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+client.connect((err) => {
+    const instructorsCollection = client.db("language-school").collection("instructors");
+    const classesCollection = client.db("language-school").collection("classes");
+    const cartCollection = client.db("language-school").collection("carts");
+    const studentsCollection = client.db("language-school").collection("students");
+    const paymentCollection = client.db("language-school").collection("payment");
 
-async function run() {
-    try {
-        // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+    app.post('/jwt', (req, res) => {
+        const user = req.body;
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+  
+        res.send({ token })
+      })
 
-        const instructorsCollection = client.db("language-school").collection("instructors");
-        const classesCollection = client.db("language-school").collection("classes");
-        const cartCollection = client.db("language-school").collection("carts");
-        const studentsCollection = client.db("language-school").collection("students");
-        const paymentCollection = client.db("language-school").collection("payment");
-
-        app.post('/jwt', (req, res) => {
-            const user = req.body;
-            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
-
-            res.send({ token })
-        })
-
-        const verifyAdmin = async (req, res, next) => {
-            const email = req.decoded.email;
-            const query = { email: email }
-            const user = await studentsCollection.findOne(query);
-            if (user?.role !== 'admin') {
-                return res.status(403).send({ error: true, message: 'forbidden message' });
-            }
-            next();
+    const verifyAdmin = async (req, res, next) => {
+        const email = req.decoded.email;
+        const query = { email: email }
+        const user = await studentsCollection.findOne(query);
+        if (user?.role !== 'admin') {
+            return res.status(403).send({ error: true, message: 'forbidden message' });
         }
-        const verifyInstructor = async (req, res, next) => {
-            const email = req.decoded.email;
-            const query = { email: email }
-            const user = await studentsCollection.findOne(query);
-            if (user?.role !== 'instructor') {
-                return res.status(403).send({ error: true, message: 'forbidden message' });
-            }
-            next();
-        }
+        next();
+    }
 
-        // students related apis
+
+
+    // app.get('/classes', async (req, res) => {
+    //     const result = await classesCollection.find().toArray();
+    //     res.send(result);
+    // });
+
+    //  students related apis
         app.get('/students', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await studentsCollection.find().toArray();
             res.send(result);
@@ -178,6 +171,30 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/addClasses', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+
+            const query = { email: email };
+            const result = await classesCollection.find(query).toArray();
+            res.send(result);
+        });
+
+        app.delete('/addClasses/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await classesCollection.deleteOne(query);
+            res.send(result);
+        })
+
         // cart data
         app.get('/carts', verifyJWT, async (req, res) => {
             const email = req.query.email;
@@ -248,18 +265,10 @@ async function run() {
             res.send(result);
         });
 
-
-
-
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
-        // await client.close();
-    }
+    console.log('connect to db');
 }
-run().catch(console.dir);
+)
+
 
 
 app.get('/', (req, res) => {
