@@ -65,19 +65,19 @@ async function run() {
             const query = { email: email }
             const user = await studentsCollection.findOne(query);
             if (user?.role !== 'admin') {
-              return res.status(403).send({ error: true, message: 'forbidden message' });
+                return res.status(403).send({ error: true, message: 'forbidden message' });
             }
             next();
-          }
+        }
         const verifyInstructor = async (req, res, next) => {
             const email = req.decoded.email;
             const query = { email: email }
             const user = await studentsCollection.findOne(query);
             if (user?.role !== 'instructor') {
-              return res.status(403).send({ error: true, message: 'forbidden message' });
+                return res.status(403).send({ error: true, message: 'forbidden message' });
             }
             next();
-          }
+        }
 
         // students related apis
         app.get('/students', verifyJWT, verifyAdmin, async (req, res) => {
@@ -114,29 +114,29 @@ async function run() {
 
         app.get('/students/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-      
+
             if (req.decoded.email !== email) {
-              res.send({ admin: false })
+                res.send({ admin: false })
             }
-      
+
             const query = { email: email }
             const user = await studentsCollection.findOne(query);
             const result = { admin: user?.role === 'admin' }
             res.send(result);
-          })
+        })
 
         app.get('/students/instructor/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-      
+
             if (req.decoded.email !== email) {
-              res.send({ instructor: false })
+                res.send({ instructor: false })
             }
-      
+
             const query = { email: email }
             const user = await studentsCollection.findOne(query);
             const result = { instructor: user?.role === 'instructor' }
             res.send(result);
-          })
+        })
 
         app.patch('/students/instructor/:id', async (req, res) => {
             const id = req.params.id;
@@ -176,7 +176,7 @@ async function run() {
             const newItem = req.body;
             const result = await classesCollection.insertOne(newItem)
             res.send(result);
-          })
+        })
 
         // cart data
         app.get('/carts', verifyJWT, async (req, res) => {
@@ -188,7 +188,7 @@ async function run() {
 
             const decodedEmail = req.decoded.email;
             if (email !== decodedEmail) {
-              return res.status(403).send({ error: true, message: 'forbidden access' })
+                return res.status(403).send({ error: true, message: 'forbidden access' })
             }
 
             const query = { email: email };
@@ -211,29 +211,43 @@ async function run() {
 
 
         // create payment intent
-    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
-        const { price } = req.body;
-        const amount = parseInt(price * 100);
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: amount,
-          currency: 'usd',
-          payment_method_types: ['card']
-        });
-  
-        res.send({
-          clientSecret: paymentIntent.client_secret
-        })
-      })
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
 
-      app.post('/payments', async (req, res) => {
-        const payment = req.body;
-        const insertResult = await paymentCollection.insertOne(payment);
-  
-        // const query = { _id: { $in: payment.cartItems.map(id => new ObjectId(id)) } }
-        // const deleteResult = await cartCollection.deleteMany(query)
-  
-        res.send({ insertResult });
-      })
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        })
+
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const insertResult = await paymentCollection.insertOne(payment);
+            res.send({ insertResult });
+        });
+
+        app.get('/payments', verifyJWT, async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+
+            const query = { email: email };
+            const result = await paymentCollection.find(query).toArray();
+            res.send(result);
+        });
+
 
 
 
